@@ -1,0 +1,7 @@
+0000000000000000000000000000000000000000 6332cc45ae91ec6db6adedec0f08fe51a9614270 karkiiisaroj <sarojkarkii600@gmail.com> 1791286938 +0545	commit (initial): Initial Django setup
+6332cc45ae91ec6db6adedec0f08fe51a9614270 0000000000000000000000000000000000000000 karkiiisaroj <sarojkarkii600@gmail.com> 1791287032 +0545	Branch: renamed refs/heads/master to refs/heads/main
+0000000000000000000000000000000000000000 6332cc45ae91ec6db6adedec0f08fe51a9614270 karkiiisaroj <sarojkarkii600@gmail.com> 1791287032 +0545	Branch: renamed refs/heads/master to refs/heads/main
+6332cc45ae91ec6db6adedec0f08fe51a9614270 da17da43000c06606067768e8bae374004515b81 karkiiisaroj <sarojkarkii600@gmail.com> 1791287579 +0545	pull --rebase origin main (start): checkout da17da43000c06606067768e8bae374004515b81
+da17da43000c06606067768e8bae374004515b81 0acb8321ee68a3580d4ce405be17537a30e4ed5e karkiiisaroj <sarojkarkii600@gmail.com> 1791287579 +0545	pull --rebase origin main (pick): Initial Django setup
+0acb8321ee68a3580d4ce405be17537a30e4ed5e 0acb8321ee68a3580d4ce405be17537a30e4ed5e karkiiisaroj <sarojkarkii600@gmail.com> 1791287579 +0545	pull --rebase origin main (finish): returning to refs/heads/main
+0acb8321ee68a3580d4ce405be17537a30e4ed5e 14f462685cd113b3170d8a42445b3992d451b1b1 karkiiisaroj <sarojkarkii600@gmail.com> 1791287818 +0545	commit: Move Django project into backend folder
