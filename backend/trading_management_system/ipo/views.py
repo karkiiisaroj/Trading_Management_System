@@ -33,6 +33,9 @@ class IPOApplicationViewSet(RoleFilteredMixin, viewsets.ModelViewSet):
         serializer.save()
 
     def perform_update(self, serializer):
+        user = self.request.user
+        if get_role(user) != 'admin' and serializer.instance.status != 'PENDING':
+            raise PermissionDenied('Only pending applications can be changed.')
         investor = serializer.validated_data.get('investor', serializer.instance.investor)
         self._check_investor(investor)
         serializer.save()

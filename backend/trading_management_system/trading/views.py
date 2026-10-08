@@ -48,6 +48,9 @@ class OrderViewSet(RoleFilteredMixin, viewsets.ModelViewSet):
         serializer.save()
 
     def perform_update(self, serializer):
+        user = self.request.user
+        if get_role(user) != 'admin' and serializer.instance.status != 'PENDING':
+            raise PermissionDenied('Only pending orders can be changed.')
         account = serializer.validated_data.get('trading_account', serializer.instance.trading_account)
         self._check_account(account)
         serializer.save()

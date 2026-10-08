@@ -73,3 +73,13 @@ class AdminOnlyFieldsMixin:
                 if name in fields:
                     fields[name].read_only = True
         return fields
+
+class IsAnyRoleNoDelete(BasePermission):
+    """Any role can read, create and update. Only admins can delete."""
+    def has_permission(self, request, view):
+        role = get_role(request.user)
+        if role is None:
+            return False
+        if request.method == 'DELETE':
+            return role == 'admin'
+        return True
