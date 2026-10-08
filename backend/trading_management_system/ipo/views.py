@@ -23,9 +23,16 @@ class IPOApplicationViewSet(RoleFilteredMixin, viewsets.ModelViewSet):
     serializer_class = IPOApplicationSerializer
     permission_classes = [IsAnyRole]
 
-    def perform_create(self, serializer):
-        investor = serializer.validated_data['investor']
+    def _check_investor(self, investor):
         user = self.request.user
         if get_role(user) != 'admin' and investor.id not in visible_investor_ids(user):
             raise PermissionDenied('You cannot apply on behalf of this investor.')
+
+    def perform_create(self, serializer):
+        self._check_investor(serializer.validated_data['investor'])
+        serializer.save()
+
+    def perform_update(self, serializer):
+        investor = serializer.validated_data.get('investor', serializer.instance.investor)
+        self._check_investor(investor)
         serializer.save()

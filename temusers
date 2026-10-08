@@ -1,0 +1,42 @@
+[33mcommit caffc7d4696185f6f6ee356dce9fcb273300a3a5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: karkiiisaroj <sarojkarkii600@gmail.com>
+Date:   Thu Oct 8 14:56:37 2026 +0545
+
+    Add role helpers and permission classes
+
+ backend/trading_management_system/users/permissions.py | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+[33mcommit 741a380514d764acf8e908f6cd84a28f9f52fe20[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: karkiiisaroj <sarojkarkii600@gmail.com>
+Date:   Thu Oct 8 13:46:52 2026 +0545
+
+    Add djangorestframework to requirements
+
+ requirements.txt | 1 [32m+[m
+ 1 file changed, 1 insertion(+)
+
+[33mcommit aa120bde0ae98a4da495ebe6374dd9d7a97a372f[m
+Author: karkiiisaroj <sarojkarkii600@gmail.com>
+Date:   Thu Oct 8 13:39:36 2026 +0545
+
+    Install and configure DRF; add API for ipo, market, notifications, trading and users.
+
+ .../trading_management_system/ipo/serializers.py   | 14 [32m+++++++++[m
+ backend/trading_management_system/ipo/urls.py      |  8 [32m+++++[m
+ backend/trading_management_system/ipo/views.py     | 14 [32m+++++++[m[31m--[m
+ .../market/searializers.py                         | 26 [32m++++++++++++++++[m
+ backend/trading_management_system/market/urls.py   | 15 [32m++++++++++[m
+ backend/trading_management_system/market/views.py  | 29 [32m++++++++++++++++[m[31m--[m
+ .../notifications/serializers.py                   |  8 [32m+++++[m
+ .../notifications/urls.py                          |  7 [32m+++++[m
+ .../notifications/views.py                         |  9 [32m++++[m[31m--[m
+ .../trading/serializers.py                         | 32 [32m++++++++++++++++++++[m
+ backend/trading_management_system/trading/urls.py  | 17 [32m+++++++++++[m
+ backend/trading_management_system/trading/views.py | 35 [32m++++++++++++++++++++[m[31m--[m
+ .../trading_management_system/settings.py          | 11 [32m+++++++[m
+ .../trading_management_system/urls.py              |  9 [32m++++[m[31m--[m
+ .../trading_management_system/users/serializers.py | 20 [32m+++++++++++++[m
+ backend/trading_management_system/users/urls.py    |  9 [32m++++++[m
+ backend/trading_management_system/users/views.py   | 23 [32m++++++++++++[m[31m--[m
+ 17 files changed, 274 insertions(+), 12 deletions(-)

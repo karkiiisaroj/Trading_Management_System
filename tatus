@@ -1,0 +1,6 @@
+[33me942bfb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Handle protected delete errors with 409 response
+[33mfdaa9ba[m Apply role-based access and investor data isolation to market, ipo, trading and notifications
+[33m54eca8a[m Add JWT authentication, auth endpoints and role-protected user API
+[33m7df21c1[m Fix typo in market serializers filename
+[33m20a0fa6[m Add role helpers and permission classes
+[33m741a380[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Add djangorestframework to requirements

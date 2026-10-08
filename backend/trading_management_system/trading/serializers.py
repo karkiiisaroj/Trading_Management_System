@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import TradingAccount, Holding, Order, Trade, Transaction
 
+from users.permissions import AdminOnlyFieldsMixin
+from .models import TradingAccount, Holding, Order, Trade, Transaction
 
 class TradingAccountSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,7 +15,9 @@ class HoldingSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class OrderSerializer(serializers.ModelSerializer):
+class OrderSerializer(AdminOnlyFieldsMixin, serializers.ModelSerializer):
+    admin_only_fields = ['status']
+
     class Meta:
         model = Order
         fields = '__all__'

@@ -38,13 +38,19 @@ class OrderViewSet(RoleFilteredMixin, viewsets.ModelViewSet):
     permission_classes = [IsAnyRole]
     investor_field = 'trading_account__investor'
 
-    def perform_create(self, serializer):
-        account = serializer.validated_data['trading_account']
+    def _check_account(self, account):
         user = self.request.user
         if get_role(user) != 'admin' and account.investor_id not in visible_investor_ids(user):
             raise PermissionDenied('You cannot place orders for this account.')
+
+    def perform_create(self, serializer):
+        self._check_account(serializer.validated_data['trading_account'])
         serializer.save()
 
+    def perform_update(self, serializer):
+        account = serializer.validated_data.get('trading_account', serializer.instance.trading_account)
+        self._check_account(account)
+        serializer.save()
 
 class TradeViewSet(RoleFilteredMixin, viewsets.ModelViewSet):
     queryset = Trade.objects.all().order_by('id')
