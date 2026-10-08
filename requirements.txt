@@ -31,6 +31,7 @@ django-filter==26.1
 django-js-asset==4.0.1
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
+djangorestframework
 executing==1.2.0
 fastjsonschema==2.17.1
 filelock==3.12.2
