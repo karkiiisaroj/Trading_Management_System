@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:trading_management_system/core/theme/theme.dart';
-import 'package:trading_management_system/core/widgets/investor_bottom_nav.dart';
-import 'package:trading_management_system/features/investor/investor/trades/select/trade_select_screen.dart';
+import '../../../../core/theme/theme.dart';
+import '../../../../core/widgets/investor_bottom_nav.dart';
+import '../trades/select/trade_select_screen.dart';
 
 /// Market tab: browse and search securities.
 ///

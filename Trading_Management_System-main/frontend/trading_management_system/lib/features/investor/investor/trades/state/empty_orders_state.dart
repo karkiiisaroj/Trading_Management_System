@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:trading_management_system/core/theme/theme.dart';
-import 'package:trading_management_system/core/widgets/widgets.dart';
+import '../../../../../core/theme/theme.dart';
+import '../../../../../core/widgets/widgets.dart';
 
 /// Shown on the Orders screen when the investor has not placed any order.
 class EmptyOrdersState extends StatelessWidget {

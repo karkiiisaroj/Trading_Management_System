@@ -18,12 +18,16 @@ class LoginForm extends StatefulWidget {
     super.key,
     required this.onSignIn,
     this.staggerStart = 0,
+    this.helpText = 'Need help? Contact your broker.',
   });
 
   final SignInCallback onSignIn;
 
   /// Slot of the first field in the screen's staggered entrance.
   final int staggerStart;
+
+  /// Line under the button.
+  final String helpText;
 
   @override
   State<LoginForm> createState() => _LoginFormState();
@@ -162,8 +166,8 @@ class _LoginFormState extends State<LoginForm> {
                 onPressed: _submit,
               ),
               const SizedBox(height: 18),
-              const Text(
-                'Need help? Contact your broker.',
+              Text(
+                widget.helpText,
                 textAlign: TextAlign.center,
                 style: AppTypography.label,
               ),

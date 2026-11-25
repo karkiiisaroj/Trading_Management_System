@@ -1,5 +1,5 @@
 /// One import for every shared widget:
-/// `import 'package:trading_management_system/core/widgets/widgets.dart';`
+/// `import 'widgets.dart';`
 export 'aartha_button.dart';
 export 'aartha_error_banner.dart';
 export 'aartha_logo.dart';

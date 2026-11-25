@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:trading_management_system/core/widgets/widgets.dart';
-import 'package:trading_management_system/features/auth/auth_session.dart';
+import '../../core/widgets/widgets.dart';
+import '../auth/auth_session.dart';
 
 import 'investor/dashboard/investor_dashboard_screen.dart';
 import 'investor/ipo/investor_ipo_apply_screen.dart';

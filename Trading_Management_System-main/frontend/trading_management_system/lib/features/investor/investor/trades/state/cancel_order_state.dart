@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:trading_management_system/core/theme/theme.dart';
-import 'package:trading_management_system/core/widgets/widgets.dart';
+import '../../../../../core/theme/theme.dart';
+import '../../../../../core/widgets/widgets.dart';
 
 /// Outcome of a cancel request (BR-I29).
 ///

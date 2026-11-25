@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:trading_management_system/core/theme/theme.dart';
+import '../../../../../core/theme/theme.dart';
 
 class TradeSecurityScreen extends StatefulWidget {
   const TradeSecurityScreen({

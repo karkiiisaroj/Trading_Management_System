@@ -31,7 +31,8 @@ class AuthSession {
 ///
 /// Demo accounts:
 ///  * `investor` : active investor
-///  * `broker`   : active broker (broker area is built later)
+///  * `broker`   : active broker
+///  * `brokerinactive` : broker whose record is inactive (BR-B04)
 ///  * `inactive` : inactive investor, rejected (BR-07)
 ///  * `admin`    : administrator, rejected here because admins use Django
 ///    Admin (BR-A01)
@@ -55,6 +56,15 @@ abstract final class DemoAuthBackend {
           role: UserRole.broker,
           displayName: 'Broker name',
           brokerCode: 'B001',
+        );
+      case 'brokerinactive':
+        // Active login, but the broker record is inactive (BR-B04): the
+        // broker area shows its "account inactive" state.
+        return const AuthSession(
+          username: 'brokerinactive',
+          role: UserRole.broker,
+          displayName: 'Broker name',
+          brokerCode: 'B002',
         );
       case 'inactive':
         throw const AuthFailure(

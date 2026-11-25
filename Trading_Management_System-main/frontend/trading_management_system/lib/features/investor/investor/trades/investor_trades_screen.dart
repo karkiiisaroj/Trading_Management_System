@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:trading_management_system/core/theme/theme.dart';
-import 'package:trading_management_system/core/widgets/investor_bottom_nav.dart';
+import '../../../../core/theme/theme.dart';
+import '../../../../core/widgets/investor_bottom_nav.dart';
 
 /// One executed trade (BR-I30). An order can produce several of these when
 /// it is filled in parts (BR-I31), so [partLabel] reads like "Part 1 of 2".
