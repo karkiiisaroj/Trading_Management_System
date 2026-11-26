@@ -417,7 +417,7 @@ class _TradeOrderScreenState extends State<TradeOrderScreen> {
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 440),
+                    constraints: const BoxConstraints(maxWidth: 560),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [

@@ -82,7 +82,7 @@ class TradeConfirmScreen extends StatelessWidget {
                 ),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 440),
+                    constraints: const BoxConstraints(maxWidth: 560),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -117,7 +117,8 @@ class TradeConfirmScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             const Text(
-                              'Your order has been created and is pending.',
+                              'Your order request was sent. It is pending until your broker '
+                              'approves it.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 14,

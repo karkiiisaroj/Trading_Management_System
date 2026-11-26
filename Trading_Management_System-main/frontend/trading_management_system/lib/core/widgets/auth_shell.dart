@@ -17,11 +17,13 @@ class AuthShell extends StatelessWidget {
     required this.child,
     this.footerNote = 'Accounts are created by your broker.',
     this.maxContentWidth = 440,
+    this.tagline = 'Clarity in every decision.',
   });
 
   final Widget child;
   final String? footerNote;
   final double maxContentWidth;
+  final String tagline;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +59,7 @@ class AuthShell extends StatelessWidget {
                             const Spacer(),
                           ],
                           const SizedBox(height: AppSpacing.xl),
-                          _Footer(note: footerNote),
+                          _Footer(note: footerNote, tagline: tagline),
                           const SizedBox(height: AppSpacing.xxl),
                         ],
                       ),
@@ -107,9 +109,10 @@ class _Card extends StatelessWidget {
 }
 
 class _Footer extends StatelessWidget {
-  const _Footer({required this.note});
+  const _Footer({required this.note, required this.tagline});
 
   final String? note;
+  final String tagline;
 
   @override
   Widget build(BuildContext context) {
@@ -120,8 +123,8 @@ class _Footer extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'Clarity in every decision.',
+          Text(
+            tagline,
             textAlign: TextAlign.center,
             style: AppTypography.tagline,
           ),

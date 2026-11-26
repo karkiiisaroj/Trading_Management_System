@@ -38,7 +38,24 @@ class AuthSession {
 ///    Admin (BR-A01)
 /// Any other username is treated as wrong credentials (BR-01, BR-I01).
 abstract final class DemoAuthBackend {
-  static Future<AuthSession> authenticate(String username, String password) async {
+  /// [portal] is the login the person used. A broker on the investor login,
+  /// or an investor on the broker login, gets the same generic error, so
+  /// nobody can tell which usernames exist.
+  static Future<AuthSession> authenticate(
+    String username,
+    String password, {
+    required UserRole portal,
+  }) async {
+    final session = await _lookup(username, password);
+    if (session.role != portal) {
+      throw const AuthFailure(
+        'Incorrect username or password. Contact your broker if you need help.',
+      );
+    }
+    return session;
+  }
+
+  static Future<AuthSession> _lookup(String username, String password) async {
     await Future<void>.delayed(const Duration(milliseconds: 900));
 
     switch (username.trim().toLowerCase()) {

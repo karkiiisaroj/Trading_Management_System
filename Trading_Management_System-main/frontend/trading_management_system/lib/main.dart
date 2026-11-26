@@ -7,6 +7,7 @@ import 'features/auth/auth_session.dart';
 import 'features/auth/login/login_screen.dart';
 import 'features/broker/broker_flow.dart';
 import 'features/investor/investor_flow.dart';
+import 'features/trade_desk/trade_desk.dart';
 
 void main() => runApp(const AarthaApp());
 
@@ -54,15 +55,31 @@ class AppRoot extends StatefulWidget {
 
 class _AppRootState extends State<AppRoot> {
   AuthSession? _session;
+  UserRole _portal = UserRole.investor;
+
+  void _switchPortal() => setState(() => _portal =
+      _portal == UserRole.investor ? UserRole.broker : UserRole.investor);
+
+  /// One order book for the whole app: what an investor requests is what the
+  /// broker sees, and only the broker can move it forward.
+  final TradeDesk _desk = TradeDesk.demo();
 
   Future<void> _signIn(String username, String password) async {
     // Throws AuthFailure on bad credentials; LoginForm shows the message.
-    final session = await DemoAuthBackend.authenticate(username, password);
+    final session = await DemoAuthBackend.authenticate(
+      username,
+      password,
+      portal: _portal,
+    );
     if (!mounted) return;
     setState(() => _session = session);
   }
 
-  void _signOut() => setState(() => _session = null);
+  // Sign out returns to the login the person used.
+  void _signOut() => setState(() {
+        if (_session?.role == UserRole.broker) _portal = UserRole.broker;
+        _session = null;
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +90,8 @@ class _AppRootState extends State<AppRoot> {
       child = LoginScreen(
         key: const ValueKey('login'),
         onSignIn: _signIn,
+        role: _portal,
+        onSwitchRole: _switchPortal,
       );
     } else {
       switch (session.role) {
@@ -81,18 +100,22 @@ class _AppRootState extends State<AppRoot> {
             key: const ValueKey('investor'),
             session: session,
             onSignOut: _signOut,
+            desk: _desk,
           );
         case UserRole.broker:
           child = BrokerFlow(
             key: const ValueKey('broker'),
             session: session,
             onSignOut: _signOut,
+            desk: _desk,
           );
         case UserRole.administrator:
           // Admins use Django Admin (BR-A01); the backend rejects them above.
           child = LoginScreen(
             key: const ValueKey('login'),
             onSignIn: _signIn,
+            role: _portal,
+            onSwitchRole: _switchPortal,
           );
       }
     }

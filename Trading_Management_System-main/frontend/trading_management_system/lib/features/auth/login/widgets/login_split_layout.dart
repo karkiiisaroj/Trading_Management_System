@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/theme.dart';
 import '../../../../core/widgets/widgets.dart';
+import '../../auth_session.dart';
 import 'login_form.dart';
 import 'login_header.dart';
 
@@ -15,9 +16,10 @@ import 'login_header.dart';
 /// layout, so there is one login for brokers and investors. The role comes
 /// back from the backend after sign in, never from this screen (BR-08).
 class LoginSplitLayout extends StatelessWidget {
-  const LoginSplitLayout({super.key, required this.onSignIn});
+  const LoginSplitLayout({super.key, required this.onSignIn, this.onSwitchRole});
 
   final SignInCallback onSignIn;
+  final VoidCallback? onSwitchRole;
 
   /// From this width the broker-style split login is used. Below it, tablets
   /// and phones keep the standard login.
@@ -37,7 +39,11 @@ class LoginSplitLayout extends StatelessWidget {
               Expanded(flex: wide ? 1 : 5, child: _BrandPanel(wide: wide)),
               Expanded(
                 flex: wide ? 1 : 6,
-                child: _FormPanel(onSignIn: onSignIn, wide: wide),
+                child: _FormPanel(
+                  onSignIn: onSignIn,
+                  wide: wide,
+                  onSwitchRole: onSwitchRole,
+                ),
               ),
             ],
           );
@@ -134,9 +140,10 @@ class _BrandPanel extends StatelessWidget {
 }
 
 class _FormPanel extends StatelessWidget {
-  const _FormPanel({required this.onSignIn, required this.wide});
+  const _FormPanel({required this.onSignIn, required this.wide, this.onSwitchRole});
 
   final SignInCallback onSignIn;
+  final VoidCallback? onSwitchRole;
   final bool wide;
 
   @override
@@ -183,6 +190,8 @@ class _FormPanel extends StatelessWidget {
                           staggerStart: 2,
                           helpText: 'Need help? Contact your administrator.',
                         ),
+                        const SizedBox(height: 8),
+                        LoginRoleSwitch(role: UserRole.broker, onSwitch: onSwitchRole),
                       ],
                     ),
                   ),

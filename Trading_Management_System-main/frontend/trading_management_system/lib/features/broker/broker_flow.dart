@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/theme.dart';
 import '../../core/widgets/widgets.dart';
 import '../auth/auth_session.dart';
+import '../trade_desk/trade_desk.dart';
 
 import 'broker/accounts/broker_accounts_screen.dart';
 import 'broker/activity/broker_activity_screen.dart';
@@ -43,12 +44,16 @@ class BrokerFlow extends StatefulWidget {
     super.key,
     required this.session,
     required this.onSignOut,
+    required this.desk,
     this.repository,
   });
 
   final AuthSession session;
   final VoidCallback onSignOut;
   final BrokerRepository? repository;
+
+  /// The shared order book (also used by the investor app).
+  final TradeDesk desk;
 
   @override
   State<BrokerFlow> createState() => _BrokerFlowState();
@@ -60,6 +65,7 @@ class _BrokerFlowState extends State<BrokerFlow> {
         brokerCode: widget.session.brokerCode ?? '',
         displayName: widget.session.displayName,
         username: widget.session.username,
+        desk: widget.desk,
       );
 
   /// The profile call doubles as the access check (inactive broker).

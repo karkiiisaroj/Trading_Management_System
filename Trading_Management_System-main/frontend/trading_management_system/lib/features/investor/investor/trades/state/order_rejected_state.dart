@@ -5,6 +5,7 @@ class OrderRejectedState extends StatelessWidget {
   const OrderRejectedState({
     super.key,
     this.orderNumber = '1042',
+    this.reason,
     this.symbol = 'ABCD',
     this.isBuy = true,
     this.quantity = 50,
@@ -17,6 +18,9 @@ class OrderRejectedState extends StatelessWidget {
   });
 
   final String orderNumber;
+
+  /// Why the order was refused, in plain words. Falls back to a general note.
+  final String? reason;
   final String symbol;
   final bool isBuy;
   final int quantity;
@@ -188,11 +192,11 @@ class OrderRejectedState extends StatelessWidget {
         children: [
           const Icon(Icons.warning_amber_rounded, color: AppColors.loss, size: 22),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Order rejected',
                   style: TextStyle(
                     color: AppColors.loss,
@@ -200,12 +204,13 @@ class OrderRejectedState extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  'Your broker could not accept this order. '
-                  'Check the price and quantity, or contact your '
-                  'broker for details.',
-                  style: TextStyle(color: AppColors.muted, fontSize: 13, height: 1.5),
+                  reason ??
+                      'Your broker could not accept this order. '
+                          'Check the price and quantity, or contact your '
+                          'broker for details.',
+                  style: const TextStyle(color: AppColors.muted, fontSize: 13, height: 1.5),
                 ),
               ],
             ),

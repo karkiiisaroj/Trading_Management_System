@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/theme.dart';
 import '../../core/widgets/widgets.dart';
 import '../auth/auth_session.dart';
+import '../broker/data/broker_models.dart' show BrokerOrder, BrokerTrade, OrderStatus;
+import '../trade_desk/trade_desk.dart';
 
 import 'investor/dashboard/investor_dashboard_screen.dart';
 import 'investor/ipo/investor_ipo_apply_screen.dart';
@@ -28,6 +31,7 @@ import 'investor/trades/state/no_account_state.dart';
 import 'investor/trades/state/order_rejected_state.dart';
 import 'investor/trades/state/security_unavailable_state.dart';
 import 'investor/trades/status/trade_status_screen.dart';
+import 'investor/trades/verify/trade_verify_sheet.dart';
 import 'investor/transactions/investor_transactions_screen.dart';
 import 'state/error_state.dart';
 import 'state/ipo_applied_state.dart';
@@ -67,23 +71,18 @@ class InvestorFlow extends StatefulWidget {
     super.key,
     required this.session,
     required this.onSignOut,
-    this.accounts = demoAccounts,
+    required this.desk,
     this.marketFeed = MarketFeed.available,
   });
 
   final AuthSession session;
   final VoidCallback onSignOut;
 
-  /// Trading accounts of this investor. Pass `[]` to see the no-account state.
-  final List<TradeAccount> accounts;
+  /// The shared order book. The investor can only *request* orders through
+  /// it; the broker decides them.
+  final TradeDesk desk;
 
   final MarketFeed marketFeed;
-
-  static const List<TradeAccount> demoAccounts = [
-    TradeAccount(accountNumber: 'A001', brokerName: 'Broker name', isActive: true),
-    TradeAccount(accountNumber: 'A002', brokerName: 'Second broker name', isActive: true),
-    TradeAccount(accountNumber: 'A003', brokerName: 'Broker name', isActive: false),
-  ];
 
   @override
   State<InvestorFlow> createState() => _InvestorFlowState();
@@ -110,12 +109,6 @@ class _InvestorFlowState extends State<InvestorFlow> {
     TradeSecurity(symbol: 'MNOP', companyName: 'Sample Finance Ltd', sector: 'Finance', price: 221.00, changePercent: -0.3, closeDate: '08 Oct'),
   ];
 
-  /// Inactive securities cannot be traded (BR-07).
-  static const Set<String> _inactiveSymbols = {'MNOP'};
-
-  /// Current holdings: investor + security = one holding (BR-I06).
-  static const Map<String, int> _held = {'ABCD': 50, 'EFGH': 120, 'IJKL': 30, 'MNOP': 200};
-
   static const Map<String, _Ipo> _ipos = {
     'ABCD': _Ipo('Sample Bank IPO', 100, 10, 100, '16 Oct', true),
     'EFGH': _Ipo('Sample Hydropower IPO', 100, 10, 100, '29 Oct', false),
@@ -132,24 +125,49 @@ class _InvestorFlowState extends State<InvestorFlow> {
   final ValueNotifier<bool> _canPop = ValueNotifier<bool>(false);
 
   late TradeAccount? _account = _initialAccount();
-  int _nextOrderNumber = 1043;
+  bool _submitting = false;
+  int _requestSeq = 0;
+  String _requestId = '';
 
-  /// Orders of this investor's own accounts only (BR-I27).
-  final List<TradeOrderRecord> _orders = [
-    const TradeOrderRecord(orderNumber: '1042', symbol: 'ABCD', action: 'Buy', status: 'Pending', quantity: 50, pricePerUnit: 512.00, date: '08 Oct'),
-    const TradeOrderRecord(orderNumber: '1041', symbol: 'EFGH', action: 'Sell', status: 'Executed', quantity: 120, pricePerUnit: 298.40, date: '07 Oct'),
-    const TradeOrderRecord(orderNumber: '1040', symbol: 'IJKL', action: 'Buy', status: 'Executed', quantity: 30, pricePerUnit: 905.10, date: '07 Oct'),
-    const TradeOrderRecord(orderNumber: '1039', symbol: 'MNOP', action: 'Buy', status: 'Cancelled', quantity: 200, pricePerUnit: 221.00, date: '06 Oct'),
-  ];
+  TradeDesk get _desk => widget.desk;
+
+  /// This investor's accounts, from the desk (BR-B10).
+  List<TradeAccount> get _accounts => [
+        for (final a in _desk.accountsOf(_clientId))
+          TradeAccount(
+            accountNumber: a.accountNumber,
+            brokerName: a.brokerName,
+            isActive: a.isActive,
+          ),
+      ];
+
+  /// Inactive securities cannot be traded (BR-07).
+  bool _isTradable(String symbol) => _desk.isTradable(symbol);
+
+  /// BR-I27: only this investor's own orders, newest first.
+  List<TradeOrderRecord> get _orders => [
+        for (final o in _desk.ordersOf(_clientId)) _record(o),
+      ];
+
+  TradeOrderRecord _record(BrokerOrder o) => TradeOrderRecord(
+        orderNumber: o.orderNumber,
+        symbol: o.symbol,
+        action: o.action,
+        status: o.status.label,
+        quantity: o.quantity,
+        pricePerUnit: o.price,
+        date: o.date,
+      );
 
   /// One application per IPO (BR-I41): symbol -> units requested.
   final Map<String, int> _ipoApplications = {};
 
   TradeAccount? _initialAccount() {
-    if (widget.accounts.isEmpty) return null;
-    return widget.accounts.firstWhere(
+    final accounts = _accounts;
+    if (accounts.isEmpty) return null;
+    return accounts.firstWhere(
       (a) => a.isActive,
-      orElse: () => widget.accounts.first,
+      orElse: () => accounts.first,
     );
   }
 
@@ -210,13 +228,6 @@ class _InvestorFlowState extends State<InvestorFlow> {
     return '${d.day.toString().padLeft(2, '0')} ${_months[d.month - 1]}';
   }
 
-  String _now() {
-    final d = DateTime.now();
-    final hh = d.hour.toString().padLeft(2, '0');
-    final mm = d.minute.toString().padLeft(2, '0');
-    return '${_today()}, $hh:$mm';
-  }
-
   TradeSecurity _find(String symbol) => _catalog.firstWhere(
         (s) => s.symbol == symbol,
         orElse: () => _catalog.first,
@@ -236,10 +247,12 @@ class _InvestorFlowState extends State<InvestorFlow> {
         onPop: () => _nav.currentState?.maybePop(),
         child: child!,
       ),
-      child: Navigator(
-        key: _nav,
-        observers: [_observer],
-        onGenerateRoute: (_) => _fade(_tab(0)),
+      child: _InvestorFrame(
+        child: Navigator(
+          key: _nav,
+          observers: [_observer],
+          onGenerateRoute: (_) => _fade(_tab(0)),
+        ),
       ),
     );
   }
@@ -260,7 +273,10 @@ class _InvestorFlowState extends State<InvestorFlow> {
           onDestinationSelected: _goTab,
         );
       case InvestorTab.trade:
-        return _tradeTab();
+        return ListenableBuilder(
+          listenable: _desk,
+          builder: (_, __) => _tradeTab(),
+        );
       case InvestorTab.more:
         return InvestorMoreScreen(
           investorName: _user.displayName,
@@ -294,7 +310,7 @@ class _InvestorFlowState extends State<InvestorFlow> {
       case 'Orders':
         _push(_ordersScreen());
       case 'Trades':
-        _push(InvestorTradesScreen(onBack: _pop, onDestinationSelected: _goTab));
+        _push(_tradesScreen());
       case 'Transactions':
         _push(InvestorTransactionsScreen(onBack: _pop, onDestinationSelected: _goTab));
       case 'IPO':
@@ -385,6 +401,13 @@ class _InvestorFlowState extends State<InvestorFlow> {
       onViewAllOrders: () => _push(_ordersScreen()),
       onSecuritySelected: (symbol) => _openTradeSecurity(_find(symbol)),
       onDestinationSelected: _goTab,
+      recentOrders: _orders.take(3).toList(),
+      awaitingApproval: _desk
+          .ordersOf(_clientId)
+          .where((o) =>
+              o.status == OrderStatus.pending ||
+              o.status == OrderStatus.submitted)
+          .length,
     );
   }
 
@@ -398,7 +421,7 @@ class _InvestorFlowState extends State<InvestorFlow> {
 
   void _openAccounts() {
     _push(TradeAccountsScreen(
-      accounts: widget.accounts,
+      accounts: _accounts,
       selectedAccount: _account?.accountNumber ?? '',
       onClose: _pop,
       onAccountSelected: (account) {
@@ -429,7 +452,7 @@ class _InvestorFlowState extends State<InvestorFlow> {
     if (account == null) return;
 
     // BR-07: inactive securities cannot be traded.
-    if (_inactiveSymbols.contains(s.symbol)) {
+    if (!_isTradable(s.symbol)) {
       _push(SecurityUnavailableState(
         symbol: s.symbol,
         companyName: s.companyName,
@@ -478,7 +501,9 @@ class _InvestorFlowState extends State<InvestorFlow> {
 
   void _startSell() {
     // You can only sell what you hold.
-    final holdings = _catalog.where((s) => (_held[s.symbol] ?? 0) > 0).toList();
+    final holdings = _catalog
+        .where((s) => _desk.sellableUnits(_clientId, s.symbol) > 0)
+        .toList();
 
     _push(TradeSelectScreen(
       securities: holdings,
@@ -492,7 +517,7 @@ class _InvestorFlowState extends State<InvestorFlow> {
     final account = _account;
     if (account == null) return;
 
-    if (_inactiveSymbols.contains(s.symbol)) {
+    if (!_isTradable(s.symbol)) {
       _openTradeSecurity(s); // shows the unavailable state
       return;
     }
@@ -502,7 +527,8 @@ class _InvestorFlowState extends State<InvestorFlow> {
       companyName: s.companyName,
       pricePerUnit: s.price,
       closeDate: s.closeDate,
-      heldUnits: _held[s.symbol] ?? 0,
+      // Units held minus units already in open sell orders.
+      heldUnits: _desk.sellableUnits(_clientId, s.symbol),
       initialQuantity: 1,
       accountNumber: account.accountNumber,
       onBack: _pop,
@@ -524,6 +550,9 @@ class _InvestorFlowState extends State<InvestorFlow> {
     final account = _account;
     if (account == null) return;
 
+    // One id per review page: a double tap or retry can't create two orders.
+    _requestId = 'REQ-${DateTime.now().microsecondsSinceEpoch}-${_requestSeq++}';
+
     // BR-I26: the investor reviews the important details before confirming.
     _push(TradeReviewScreen(
       symbol: draft.symbol,
@@ -534,131 +563,204 @@ class _InvestorFlowState extends State<InvestorFlow> {
       accountNumber: account.accountNumber,
       onBack: _pop,
       onEditDetails: _pop,
-      onConfirmOrder: () => _placeOrder(draft),
+      onConfirmOrder: () => _requestOrder(draft, _requestId),
       onDestinationSelected: _goTab,
     ));
   }
 
-  /// BR-I25: business validation before the order proceeds.
-  bool _passesValidation(TradeOrderDraft d) {
+  /// Sends an order *request*. The investor app never approves or executes
+  /// anything: it asks for the trade PIN, then hands the request to the desk,
+  /// which re-checks every rule and creates the order as Pending for the
+  /// broker to decide.
+  Future<void> _requestOrder(TradeOrderDraft draft, String requestId) async {
     final account = _account;
-    if (account == null || !account.isActive) return false; // BR-B12
-    if (_inactiveSymbols.contains(d.symbol)) return false; // BR-07
-    if (d.quantity <= 0 || d.pricePerUnit <= 0) return false; // BR-I21, I22
-    if (!_isBuy(d.action) && d.quantity > (_held[d.symbol] ?? 0)) {
-      return false; // cannot sell more than is held
+    if (account == null || _submitting) return;
+    _submitting = true;
+    try {
+      final isBuy = _isBuy(draft.action);
+      final fingerprint = TradeDesk.fingerprint(
+        accountNumber: account.accountNumber,
+        symbol: draft.symbol,
+        action: draft.action,
+        quantity: draft.quantity,
+        pricePerUnit: draft.pricePerUnit,
+      );
+
+      final token = await showTradeVerifySheet(
+        _n.overlay!.context,
+        summary: '${isBuy ? 'Buy' : 'Sell'} ${draft.quantity} units of '
+            '${draft.symbol} at Rs. ${draft.pricePerUnit.toStringAsFixed(2)}. '
+            'Your broker must approve it before anything is traded.',
+        verify: (pin) => _desk.verifyPin(
+          clientId: _clientId,
+          pin: pin,
+          fingerprint: fingerprint,
+        ),
+      );
+      if (token == null || !mounted) return;
+
+      final result = _desk.submit(
+        clientId: _clientId, // from the signed-in session (BR-08)
+        request: OrderRequest(
+          requestId: requestId,
+          accountNumber: account.accountNumber,
+          symbol: draft.symbol,
+          action: draft.action,
+          quantity: draft.quantity,
+          pricePerUnit: draft.pricePerUnit,
+          authorization: token,
+        ),
+      );
+
+      final order = result.order;
+      if (order == null) {
+        // Not a valid order (expired approval, wrong account, too fast).
+        _toast(result.refusal?.message ?? 'The order could not be sent.');
+        return;
+      }
+
+      // Replace review/order pages so Back can't submit the same order twice.
+      final Widget page = result.accepted
+          ? TradeConfirmScreen(
+              orderNumber: order.orderNumber,
+              symbol: order.symbol,
+              action: order.action,
+              quantity: order.quantity,
+              status: order.status.label,
+              onViewOrderStatus: () => _n.pushReplacement(
+                _slide(_statusScreen(_record(order))),
+              ),
+              onBackToMarket: () => _goTab(InvestorTab.market.index),
+            )
+          : OrderRejectedState(
+              orderNumber: order.orderNumber,
+              reason: result.refusal?.message,
+              symbol: order.symbol,
+              isBuy: order.isBuy,
+              quantity: order.quantity,
+              pricePerUnit: order.price,
+              submittedAt: _desk.metaOf(order.orderNumber)?.createdAt ?? order.date,
+              onBack: () => _goTab(InvestorTab.trade.index),
+              onPlaceNewOrder: () => _goTab(InvestorTab.trade.index),
+              onContactBroker: _contactBroker,
+              onDestinationSelected: _goTab,
+            );
+      _n.pushAndRemoveUntil(_slide(page), (r) => r.isFirst);
+    } finally {
+      _submitting = false;
     }
-    return true;
-  }
-
-  void _placeOrder(TradeOrderDraft draft) {
-    final isBuy = _isBuy(draft.action);
-    final accepted = _passesValidation(draft);
-    final number = '${_nextOrderNumber++}';
-
-    final record = TradeOrderRecord(
-      orderNumber: number,
-      symbol: draft.symbol,
-      action: isBuy ? 'Buy' : 'Sell',
-      status: accepted ? 'Pending' : 'Rejected',
-      quantity: draft.quantity,
-      pricePerUnit: draft.pricePerUnit,
-      date: _today(),
-    );
-    setState(() => _orders.insert(0, record));
-
-    // Replace review/order pages so Back can't submit the same order twice.
-    final Widget result = accepted
-        ? TradeConfirmScreen(
-            orderNumber: number,
-            symbol: draft.symbol,
-            action: isBuy ? 'Buy' : 'Sell',
-            quantity: draft.quantity,
-            status: 'Pending',
-            // Replaces the confirm page, so Back from status goes to the tab.
-            onViewOrderStatus: () =>
-                _n.pushReplacement(_slide(_statusScreen(record))),
-            onBackToMarket: () => _goTab(InvestorTab.market.index),
-          )
-        : OrderRejectedState(
-            orderNumber: number,
-            symbol: draft.symbol,
-            isBuy: isBuy,
-            quantity: draft.quantity,
-            pricePerUnit: draft.pricePerUnit,
-            submittedAt: _now(),
-            onBack: () => _goTab(InvestorTab.trade.index),
-            onPlaceNewOrder: () => _goTab(InvestorTab.trade.index),
-            onContactBroker: _contactBroker,
-            onDestinationSelected: _goTab,
-          );
-
-    _n.pushAndRemoveUntil(_slide(result), (r) => r.isFirst);
   }
 
   // ---- orders / status / cancel ------------------------------------------
 
-  Widget _ordersScreen() {
-    if (_orders.isEmpty) {
-      return EmptyOrdersState(
-        onBack: _pop,
-        onPlaceOrder: () => _goTab(InvestorTab.trade.index),
-        onDestinationSelected: _goTab,
+  Widget _ordersScreen() => ListenableBuilder(
+        listenable: _desk,
+        builder: (_, __) {
+          final orders = _orders;
+          if (orders.isEmpty) {
+            return EmptyOrdersState(
+              onBack: _pop,
+              onPlaceOrder: () => _goTab(InvestorTab.trade.index),
+              onDestinationSelected: _goTab,
+            );
+          }
+          return TradeOrdersScreen(
+            orders: List<TradeOrderRecord>.unmodifiable(orders),
+            onBack: _pop,
+            onOrderSelected: _openStatus,
+            onDestinationSelected: _goTab,
+          );
+        },
       );
-    }
-    return TradeOrdersScreen(
-      orders: List<TradeOrderRecord>.unmodifiable(_orders),
-      onBack: _pop,
-      onOrderSelected: _openStatus,
-      onDestinationSelected: _goTab,
-    );
-  }
 
   void _openStatus(TradeOrderRecord order) => _push(_statusScreen(order));
 
-  Widget _statusScreen(TradeOrderRecord order) => TradeStatusScreen(
-      orderNumber: order.orderNumber,
-      status: order.status,
-      symbol: order.symbol,
-      isBuy: _isBuy(order.action),
-      quantity: order.quantity,
-      pricePerUnit: order.pricePerUnit,
-      submittedAt: order.date,
-      onBack: _pop,
-      onCancelOrder: () => _cancel(order),
-      onDestinationSelected: _goTab,
-    );
+  /// Reads the order from the desk, so an approval by the broker shows up
+  /// here without reopening the page.
+  Widget _statusScreen(TradeOrderRecord order) => ListenableBuilder(
+        listenable: _desk,
+        builder: (_, __) {
+          final live = _orders.firstWhere(
+            (o) => o.orderNumber == order.orderNumber,
+            orElse: () => order,
+          );
+          return TradeStatusScreen(
+            key: ValueKey('${live.orderNumber}-${live.status}'),
+            orderNumber: live.orderNumber,
+            status: live.status,
+            symbol: live.symbol,
+            isBuy: _isBuy(live.action),
+            quantity: live.quantity,
+            pricePerUnit: live.pricePerUnit,
+            submittedAt: live.date,
+            onBack: _pop,
+            onCancelOrder: () => _cancel(live),
+            onDestinationSelected: _goTab,
+          );
+        },
+      );
 
-  /// BR-I29: cancellation only when the current status permits it.
+  /// BR-I29: only the desk decides whether the status permits cancelling.
   void _cancel(TradeOrderRecord order) {
-    final index = _orders.indexWhere((o) => o.orderNumber == order.orderNumber);
-    final current = index == -1 ? order : _orders[index];
-    final canCancel = current.status == 'Pending' || current.status == 'Submitted';
-
-    if (canCancel && index != -1) {
-      setState(() {
-        _orders[index] = TradeOrderRecord(
-          orderNumber: current.orderNumber,
-          symbol: current.symbol,
-          action: current.action,
-          status: 'Cancelled',
-          quantity: current.quantity,
-          pricePerUnit: current.pricePerUnit,
-          date: current.date,
-        );
-      });
-    }
+    final result = _desk.cancel(
+      clientId: _clientId,
+      orderNumber: order.orderNumber,
+    );
+    final current = result.order == null ? order : _record(result.order!);
 
     _n.pushReplacement(_slide(CancelOrderState(
       orderNumber: current.orderNumber,
       symbol: current.symbol,
-      cancelled: canCancel,
+      cancelled: result.cancelled,
       currentStatus: current.status,
       onBack: _pop,
       onViewOrders: () => _resetTo(_ordersScreen()),
       onDestinationSelected: _goTab,
     )));
   }
+
+  // ---- trades -------------------------------------------------------------
+
+  /// Executions of this investor's orders, made by the broker (BR-I30).
+  Widget _tradesScreen() => ListenableBuilder(
+        listenable: _desk,
+        builder: (_, __) {
+          final orders = {for (final o in _desk.ordersOf(_clientId)) o.orderNumber: o};
+          final mine = _desk.tradesOf(_clientId);
+          final perOrder = <String, int>{};
+          for (final t in mine) {
+            perOrder[t.orderNumber] = (perOrder[t.orderNumber] ?? 0) + 1;
+          }
+          final seen = <String, int>{};
+          // Oldest first so "Part 1 of 2" reads in the order they happened.
+          final records = <InvestorTradeRecord>[];
+          for (final BrokerTrade t in mine.reversed) {
+            final order = orders[t.orderNumber];
+            final n = (seen[t.orderNumber] = (seen[t.orderNumber] ?? 0) + 1);
+            final total = perOrder[t.orderNumber] ?? 1;
+            records.add(InvestorTradeRecord(
+              orderNumber: t.orderNumber,
+              symbol: t.symbol,
+              isBuy: order?.isBuy ?? true,
+              executedQuantity: t.quantity,
+              orderQuantity: order?.quantity ?? t.quantity,
+              executionPrice: t.price,
+              date: t.date,
+              partLabel: total > 1 ? 'Part $n of $total' : null,
+            ));
+          }
+          return InvestorTradesScreen(
+            trades: records.reversed.toList(),
+            onBack: _pop,
+            onTradeSelected: (t) {
+              for (final o in _orders) {
+                if (o.orderNumber == t.orderNumber) _openStatus(o);
+              }
+            },
+            onDestinationSelected: _goTab,
+          );
+        },
+      );
 
   // ---- IPO ----------------------------------------------------------------
 
@@ -811,5 +913,48 @@ class _MarketTabState extends State<_MarketTab> {
           onDestinationSelected: widget.onDestinationSelected,
         );
     }
+  }
+}
+
+/// Phones: untouched. Tablets and wider: a centred column of [maxWidth]
+/// with a gentle text-size bump, so layouts built for a phone don't stretch.
+class _InvestorFrame extends StatelessWidget {
+  const _InvestorFrame({required this.child});
+
+  final Widget child;
+
+  static const double tabletBreakpoint = 600;
+  static const double maxWidth = 720;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        if (box.maxWidth < tabletBreakpoint) return child;
+        final mq = MediaQuery.of(context);
+        return ColoredBox(
+          color: AppColors.deep,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: maxWidth),
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  color: AppColors.background,
+                  border: Border.symmetric(
+                    vertical: BorderSide(color: AppColors.border),
+                  ),
+                ),
+                child: MediaQuery(
+                  data: mq.copyWith(
+                    textScaler: TextScaler.linear(mq.textScaler.scale(1) * 1.08),
+                  ),
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }

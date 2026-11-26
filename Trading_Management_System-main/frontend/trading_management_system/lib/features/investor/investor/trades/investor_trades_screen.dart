@@ -35,7 +35,7 @@ class InvestorTradeRecord {
 class InvestorTradesScreen extends StatelessWidget {
   const InvestorTradesScreen({
     super.key,
-    this.trades = _defaultTrades,
+    this.trades = const [],
     this.onBack,
     this.onTradeSelected,
     this.onDestinationSelected,
@@ -45,38 +45,6 @@ class InvestorTradesScreen extends StatelessWidget {
   final VoidCallback? onBack;
   final ValueChanged<InvestorTradeRecord>? onTradeSelected;
   final ValueChanged<int>? onDestinationSelected;
-
-  static const List<InvestorTradeRecord> _defaultTrades = [
-    InvestorTradeRecord(
-      orderNumber: '1041',
-      symbol: 'EFGH',
-      isBuy: false,
-      executedQuantity: 120,
-      orderQuantity: 120,
-      executionPrice: 298.40,
-      date: '07 Oct',
-    ),
-    InvestorTradeRecord(
-      orderNumber: '1040',
-      symbol: 'IJKL',
-      isBuy: true,
-      executedQuantity: 20,
-      orderQuantity: 30,
-      executionPrice: 905.10,
-      date: '07 Oct',
-      partLabel: 'Part 1 of 2',
-    ),
-    InvestorTradeRecord(
-      orderNumber: '1040',
-      symbol: 'IJKL',
-      isBuy: true,
-      executedQuantity: 10,
-      orderQuantity: 30,
-      executionPrice: 906.00,
-      date: '07 Oct',
-      partLabel: 'Part 2 of 2',
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {

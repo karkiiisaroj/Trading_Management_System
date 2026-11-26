@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../../core/theme/theme.dart';
+import '../orders/trade_orders_screen.dart';
 
 class TradeDashboardScreen extends StatelessWidget {
   const TradeDashboardScreen({
@@ -13,6 +14,8 @@ class TradeDashboardScreen extends StatelessWidget {
     this.onViewAllOrders,
     this.onSecuritySelected,
     this.onDestinationSelected,
+    this.recentOrders = const [],
+    this.awaitingApproval = 0,
   });
 
   final String accountNumber;
@@ -25,6 +28,12 @@ class TradeDashboardScreen extends StatelessWidget {
   final VoidCallback? onViewAllOrders;
   final ValueChanged<String>? onSecuritySelected;
   final ValueChanged<int>? onDestinationSelected;
+
+  /// Latest orders of this investor, newest first (live from the desk).
+  final List<TradeOrderRecord> recentOrders;
+
+  /// Orders still waiting for the broker to act on them.
+  final int awaitingApproval;
 
 
   @override
@@ -46,6 +55,7 @@ class TradeDashboardScreen extends StatelessWidget {
                     _buildAccountCard(),
                     const SizedBox(height: 12),
                     _buildTradeActions(),
+                    if (awaitingApproval > 0) _buildAwaitingBanner(),
                     const SizedBox(height: 24),
                     _buildRecentOrders(),
                     const SizedBox(height: 22),
@@ -229,24 +239,66 @@ class TradeDashboardScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        _orderCard(
-          symbol: 'ABCD',
-          side: 'Buy',
-          status: 'Pending',
-          statusColor: AppColors.brass,
-          details: '50 units at Rs. 512.00',
-          date: '08 Oct',
-        ),
-        const SizedBox(height: 10),
-        _orderCard(
-          symbol: 'EFGH',
-          side: 'Sell',
-          status: 'Executed',
-          statusColor: AppColors.gain,
-          details: '120 units at Rs. 298.40',
-          date: '07 Oct',
-        ),
+        if (recentOrders.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              'No orders yet. Orders you request appear here.',
+              style: TextStyle(color: AppColors.muted, fontSize: 13),
+            ),
+          ),
+        for (final o in recentOrders.take(3)) ...[
+          _orderCard(
+            symbol: o.symbol,
+            side: o.action,
+            status: o.status,
+            statusColor: _statusColor(o.status),
+            details:
+                '${o.quantity} units at Rs. ${o.pricePerUnit.toStringAsFixed(2)}',
+            date: o.date,
+          ),
+          const SizedBox(height: 10),
+        ],
       ],
+    );
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'Executed':
+        return AppColors.gain;
+      case 'Rejected':
+        return AppColors.loss;
+      case 'Cancelled':
+        return AppColors.muted;
+      default:
+        return AppColors.brass;
+    }
+  }
+
+  Widget _buildAwaitingBanner() {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.brass.withOpacity(0.5)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.hourglass_top_rounded, color: AppColors.brass, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              awaitingApproval == 1
+                  ? '1 order is waiting for your broker to approve it.'
+                  : '$awaitingApproval orders are waiting for your broker to approve them.',
+              style: const TextStyle(color: AppColors.text, fontSize: 13, height: 1.4),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

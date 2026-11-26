@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/widgets.dart';
+import '../auth_session.dart';
 import 'widgets/login_form.dart';
 import 'widgets/login_header.dart';
 import 'widgets/login_splash.dart';
@@ -8,32 +9,41 @@ import 'widgets/login_split_layout.dart';
 
 export 'widgets/login_form.dart' show SignInCallback;
 
-/// The one login for brokers and investors. There is no registration: the
-/// admin creates the credentials and the broker hands them out.
-///
-/// Layout follows the width:
-///  * desktop (>= [LoginSplitLayout.desktopBreakpoint]): [LoginSplitLayout],
-///    brand panel + form (brokers use desktop)
-///  * tablet and phone: the standard login (centred card on tablet, full
-///    width on phone), as investors use it
-///
-/// Plays the animated splash first, then fades into the form.
-/// Pieces live in `widgets/`: [LoginSplash], [LoginBrandHeader],
-/// [LoginWelcome] and [LoginForm].
+/// One screen per portal. Investors always get the phone/tablet card, and
+/// brokers get the split layout on desktop. Each shows a link to the other
+/// portal. The backend must also reject a role that doesn't match the portal.
 class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key, required this.onSignIn});
+  const LoginScreen({
+    super.key,
+    required this.onSignIn,
+    this.role = UserRole.investor,
+    this.onSwitchRole,
+  });
 
   final SignInCallback onSignIn;
+  final UserRole role;
+  final VoidCallback? onSwitchRole;
 
   @override
   Widget build(BuildContext context) {
+    final isBroker = role == UserRole.broker;
     return LoginSplash(
       child: LayoutBuilder(
         builder: (context, box) {
-          if (box.maxWidth >= LoginSplitLayout.desktopBreakpoint) {
-            return LoginSplitLayout(onSignIn: onSignIn);
+          if (isBroker && box.maxWidth >= LoginSplitLayout.desktopBreakpoint) {
+            return LoginSplitLayout(
+              key: ValueKey(role),
+              onSignIn: onSignIn,
+              onSwitchRole: onSwitchRole,
+            );
           }
           return AuthShell(
+            tagline: isBroker
+                ? 'Clarity in every decision.'
+                : 'Your wealth, in clear view.',
+            footerNote: isBroker
+                ? 'Accounts are created by your administrator.'
+                : 'Accounts are created by your broker.',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisSize: MainAxisSize.min,
@@ -43,12 +53,15 @@ class LoginScreen extends StatelessWidget {
                   child: LoginBrandHeader(),
                 ),
                 const SizedBox(height: 36),
-                const FadeSlideIn(
-                  delay: Duration(milliseconds: 150),
-                  child: LoginWelcome(),
+                FadeSlideIn(
+                  delay: const Duration(milliseconds: 150),
+                  child: LoginWelcome(role: role),
                 ),
                 const SizedBox(height: 24),
-                LoginForm(onSignIn: onSignIn, staggerStart: 2),
+                // The key clears the fields when the portal is switched.
+                LoginForm(key: ValueKey(role), onSignIn: onSignIn, staggerStart: 2),
+                const SizedBox(height: 8),
+                LoginRoleSwitch(role: role, onSwitch: onSwitchRole),
               ],
             ),
           );

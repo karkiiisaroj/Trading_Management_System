@@ -183,7 +183,7 @@ class TradeReviewScreen extends StatelessWidget {
           ),
         ),
         child: const Text(
-          'Confirm order',
+          'Send for approval',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
       ),
@@ -269,7 +269,7 @@ class TradeReviewScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 440),
+                    constraints: const BoxConstraints(maxWidth: 560),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -277,8 +277,10 @@ class TradeReviewScreen extends StatelessWidget {
                         _buildOrderSummary(),
                         const SizedBox(height: 14),
                         const Text(
-                          'Prices are historical closes. The order is '
-                          'created with the status Pending.',
+                          'This sends a request to your broker. Nothing is bought '
+                          'or sold until your broker approves and executes it. '
+                          'Prices are historical closes. You will be asked for '
+                          'your trade PIN to send it.',
                           style: TextStyle(
                             color: AppColors.muted,
                             fontSize: 12,
